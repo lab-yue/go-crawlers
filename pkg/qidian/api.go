@@ -37,9 +37,10 @@ type Chapter struct {
 
 func main() {
 	c := make(chan *Book)
-	go GetBook(c, os.Args[1])
 	fmt.Println("waiting network")
+
 	if len(os.Args) > 1 {
+		go GetBook(c, os.Args[1])
 		for {
 			select {
 			case book := <-c:
