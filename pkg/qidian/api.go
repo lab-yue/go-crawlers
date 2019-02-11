@@ -1,4 +1,4 @@
-package main
+package qidian
 
 import (
 	"encoding/json"
@@ -36,9 +36,20 @@ type Chapter struct {
 }
 
 func main() {
+	c := make(chan *Book)
+	go GetBook(c, os.Args[1])
+	fmt.Println("waiting network")
 	if len(os.Args) > 1 {
-		book := GetBook(os.Args[1])
-		fmt.Println(book)
+		for {
+			select {
+			case book := <-c:
+				fmt.Println("\n\r", book)
+				return
+			default:
+				fmt.Print(".")
+				time.Sleep(25 * time.Millisecond)
+			}
+		}
 	} else {
 		fmt.Println("ERROR: NO BookID")
 		os.Exit(2)
@@ -46,7 +57,7 @@ func main() {
 }
 
 // GetBook : get book data from api
-func GetBook(BookID string) *Book {
+func GetBook(c chan *Book, BookID string) {
 	res := APIData{}
 	req := &http.Client{Timeout: 10 * time.Second}
 	url := "https://read.qidian.com/ajax/book/category?&bookId=" + BookID
@@ -57,7 +68,8 @@ func GetBook(BookID string) *Book {
 	defer r.Body.Close()
 	json.NewDecoder(r.Body).Decode(&res)
 
-	return &res.Data
+	c <- &res.Data
+	return
 }
 
 func (book *Book) String() string {
